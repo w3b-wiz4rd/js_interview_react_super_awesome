@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import styled from "styled-components";
 import { ToastContainer, Zoom } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-/* API */
-import { getMessages, sendMessage } from "./api/chat";
+/* Redux */
+import {
+  fetchMessagesAction,
+  sendMessageAction
+} from "./reducers/messagesReducer";
 /* Components */
 import Message from "./Components/Message";
 import Form from "./Components/Form";
 import Button from "./Components/Button";
 import { device } from "./media";
-/* Utils */
-import { errorHandling } from "./errorHandling";
 
 const Container = styled.div`
   /* Display & Box Model */
@@ -109,19 +111,16 @@ const NameInput = styled.input`
 `;
 
 function App() {
-  const [messages, setMessages] = useState([]);
+  const dispatch = useDispatch();
+
+  const { messages } = useSelector(state => ({
+    messages: state.messages.messages
+  }));
+
   const [formValues, setFormValues] = useState({ name: "", message: "" });
 
-  const fetchMessages = () => {
-    getMessages()
-      .then(response => {
-        setMessages(response.data);
-      })
-      .catch(err => errorHandling(err));
-  };
-
   useEffect(() => {
-    fetchMessages();
+    dispatch(fetchMessagesAction());
   }, []);
 
   const onChange = e => {
@@ -135,16 +134,10 @@ function App() {
   const onSubmit = event => {
     event.preventDefault();
     const { name, message } = formValues;
-    sendMessage(name, message)
-      .then(() => {
-        const newFormValues = { ...formValues };
-        newFormValues.message = "";
-        setFormValues(newFormValues);
-        fetchMessages();
-      })
-      .catch(error => {
-        errorHandling(error);
-      });
+    dispatch(sendMessageAction(name, message));
+    const newFormValues = { ...formValues };
+    newFormValues.message = "";
+    setFormValues(newFormValues);
   };
 
   return (
@@ -163,7 +156,7 @@ function App() {
             <Message
               key={message.id}
               message={message}
-              refresh={fetchMessages}
+              refresh={() => dispatch(fetchMessagesAction())}
             />
           ))}
         </Chats>
